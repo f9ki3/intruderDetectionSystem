@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Stream</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -42,87 +40,43 @@
             background-color: #2980b9;
             border-color: #2980b9;
         }
-
-            .btn-primary:hover {
-                background-color: #3498db;
-                border-color: #3498db;
-            }
-
+        .btn-primary:hover {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
         .btn-danger {
             background-color: #e74c3c;
             border-color: #e74c3c;
         }
-
-            .btn-danger:hover {
-                background-color: #c0392b;
-                border-color: #c0392b;
-            }
+        .btn-danger:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Camera Authorize</h2>
-        <div class="mb-4">
-            <video class="stream-thumbnail" id="webcam" autoplay></video>
+        <div class="mb-4 d-flex justify-content-center">
+            <img id="video-stream-only" src="" alt="Video Stream" style="border: 2px solid black; max-width: 640px; width: 100%;">
         </div>
 
         <div class="mt-4 text-center">
-            <button class="btn-primary btn w-100">Add Authorize</button>
+            <a onclick="registerFace()" class="btn btn-primary w-100">Add Authorize</a>
         </div>
         <div class="mt-3 text-center">
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary w-100">Back to Dashboard</a>
         </div>
     </div>
-  <script>
-    // Ensure that the browser supports the webcam and TensorFlow.js
-    async function setupWebcam() {
-    const video = document.getElementById('webcam');
-    
-    // Try to get the video stream from the webcam
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-    });
-    video.srcObject = stream;
-    
-    // Wait for the video element to be ready
-    return new Promise((resolve) => {
-        video.onloadedmetadata = () => {
-        resolve(video);
-        };
-    });
-    }
 
-    // Load the COCO-SSD model
-    async function loadModel() {
-    const model = await cocoSsd.load();
-    console.log('COCO-SSD model loaded');
-    return model;
-    }
-
-    // Perform object detection on each video frame
-    async function detectObjects(video, model) {
-    const predictions = await model.detect(video);
-    
-    // Log each detected object
-    predictions.forEach(prediction => {
-        console.log(`Detected object: ${prediction.class} with confidence: ${prediction.score}`);
-    });
-
-    // Call the detectObjects function again for continuous detection
-    requestAnimationFrame(() => detectObjects(video, model));
-    }
-
-    async function run() {
-    // Setup webcam and load the model
-    const video = await setupWebcam();
-    const model = await loadModel();
-    
-    // Start the object detection
-    detectObjects(video, model);
-    }
-
-    // Run the detection
-    run();
-  </script>
+    <script>
+        document.getElementById('video-stream-only').src = '/video_feed_only';
+        function registerFace() {
+            fetch('/register_face', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => alert('Error: ' + error));
+        }
+    </script>
 </body>
 </html>

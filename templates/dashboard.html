@@ -12,15 +12,17 @@
             font-family: 'Roboto', sans-serif;
             padding-top: 50px;
         }
-
+    
         .dashboard-card {
             border-radius: 15px;
             padding: 30px;
             background-color: #ffffff;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             margin-top: 30px;
+            max-width: 900px; /* Centered width for better fit */
+            margin: auto;
         }
-
+    
         .header-container {
             display: flex;
             justify-content: space-between;
@@ -31,7 +33,7 @@
             color: white;
             margin-bottom: 30px;
         }
-
+    
         .logout-btn {
             background-color: #e74c3c;
             color: white;
@@ -40,37 +42,32 @@
             font-size: 16px;
             transition: background-color 0.3s ease;
         }
-
+    
             .logout-btn:hover {
                 background-color: #c0392b;
             }
-
+    
         h2 {
-            font-size: 48px;
+            font-size: 36px; /* Adjusted for responsiveness */
             font-weight: 700;
             color: #fff;
             font-family: 'Playfair Display', serif;
         }
-
+    
         h4 {
             font-size: 18px;
             font-weight: 400;
             color: #333;
             font-family: 'Roboto', sans-serif;
         }
-
+    
         .nav-row {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
+            display: grid; /* Use grid for better alignment */
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive columns */
+            gap: 20px; /* Spacing between buttons */
             margin-top: 30px;
         }
-
-        .nav-item {
-            flex: 1;
-            text-align: center;
-        }
-
+    
         .btn-custom {
             background-color: #3498db;
             color: white;
@@ -78,17 +75,17 @@
             font-weight: 500;
             border-radius: 5px;
             padding: 15px 30px;
-            width: 250px;
             transition: all 0.3s ease;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            width: 100%; /* Ensure buttons take full width */
         }
-
+    
             .btn-custom:hover {
                 background-color: #2980b9;
                 transform: translateY(-3px);
                 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             }
-
+    
         .footer-message {
             text-align: center;
             font-size: 22px;
@@ -97,28 +94,24 @@
             color: #333;
             margin-top: 40px;
         }
-
+    
             .footer-message strong {
                 color: #3498db;
                 font-weight: 600;
             }
-
-        .nav-row .nav-item {
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            0% {
-                opacity: 0;
-                transform: translateY(30px);
+    
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 28px; /* Smaller font for mobile screens */
             }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0);
+    
+            .logout-btn {
+                padding: 10px 15px;
+                font-size: 14px;
             }
         }
     </style>
+    
 </head>
 <body>
     <div class="container">
@@ -144,9 +137,14 @@
                 <div class="nav-item">
                     <a href="{{ url_for('camera_stream') }}" class="btn btn-custom">View Camera Stream</a>
                 </div>
-                <div class="nav-item">
-                    <a href="{{ url_for('camera_authorize') }}" class="btn btn-custom">Manage Authorize</a>
-                </div>
+                {% if role == 'admin' %}
+                    <div class="nav-item">
+                        <a href="{{ url_for('camera_authorize') }}" class="btn btn-custom">Manage Authorize</a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('audit_trail') }}" class="btn btn-custom">Audit Trail</a>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
