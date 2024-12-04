@@ -147,7 +147,7 @@ def save_screenshot(frame):
 
     # Email content setup
     sender_email = "carurucankylejustin@gmail.com"
-    receiver_email = "rickandmorty0224@gmail.com"
+    receiver_email = "cloudrazor38@gmail.com"
     subject = "Intruder Alert: CCTV Detection"
     body = "Your CCTV system has detected an intruder. Please find the attached screenshot."
 
