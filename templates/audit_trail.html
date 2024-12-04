@@ -54,20 +54,31 @@
             border-color: #2980b9;
         }
 
-            .btn-primary:hover {
-                background-color: #3498db;
-                border-color: #3498db;
-            }
+        .btn-primary:hover {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
 
         .btn-danger {
             background-color: #e74c3c;
             border-color: #e74c3c;
         }
 
-            .btn-danger:hover {
-                background-color: #c0392b;
-                border-color: #c0392b;
-            }
+        .btn-danger:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+
+        .page-item.disabled .page-link {
+            pointer-events: none;
+            background-color: #f8f9fa;
+            border-color: #ddd;
+        }
+
     </style>
 </head>
 <body>
@@ -84,31 +95,138 @@
                     <th>Details</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>2024-12-05 10:15:23</td>
-                    <td>John Doe</td>
-                    <td>Camera Added</td>
-                    <td>Added Camera 001 to the system.</td>
-                </tr>
-                <tr>
-                    <td>2024-12-04 14:22:10</td>
-                    <td>Jane Smith</td>
-                    <td>Camera Removed</td>
-                    <td>Removed Camera 005 due to decommissioning.</td>
-                </tr>
-                <tr>
-                    <td>2024-12-03 09:45:34</td>
-                    <td>Admin</td>
-                    <td>User Authorized</td>
-                    <td>Granted access to user "newuser123".</td>
-                </tr>
-            </tbody>
+            <tbody></tbody>
         </table>
+
+        <!-- Pagination controls -->
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                <li class="page-item" id="prev-page">
+                    <a class="page-link" href="#">Previous</a>
+                </li>
+                <!-- Dynamic page numbers will be inserted here -->
+                <li class="page-item" id="next-page">
+                    <a class="page-link" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
 
         <div class="mt-4 text-center">
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary w-100">Back to Dashboard</a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tableBody = document.querySelector("table tbody");
+            const prevPageBtn = document.getElementById("prev-page");
+            const nextPageBtn = document.getElementById("next-page");
+            let currentPage = 1;
+            const itemsPerPage = 5;  // Number of logs per page
+            let allLogs = [];
+            let totalPages = 0;
+
+            // Function to fetch all audit logs from the server
+            function fetchLogs() {
+                fetch('/audit-logs')
+                    .then(response => response.json())
+                    .then(data => {
+                        allLogs = data; // Store all the logs
+                        totalPages = Math.ceil(allLogs.length / itemsPerPage); // Calculate total pages
+                        displayLogs(currentPage); // Display logs for the current page
+                        setupPagination(); // Setup pagination controls
+                    })
+                    .catch(error => {
+                        console.error("Error fetching logs:", error);
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td colspan="4" class="text-center text-danger">Failed to load logs.</td>`;
+                        tableBody.appendChild(row);
+                    });
+            }
+
+            // Function to display logs for the current page
+            function displayLogs(page) {
+                // Clear existing rows in the table
+                tableBody.innerHTML = "";
+
+                // Slice the logs array to get only the logs for the current page
+                const start = (page - 1) * itemsPerPage;
+                const end = page * itemsPerPage;
+                const logsToDisplay = allLogs.slice(start, end);
+
+                // Populate rows with the logs for the current page
+                logsToDisplay.forEach(log => {
+                    const row = document.createElement("tr");
+
+                    row.innerHTML = `
+                        <td>${log.date}</td>
+                        <td>${log.user}</td>
+                        <td>${log.action}</td>
+                        <td>${log.details}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Setup pagination controls
+            function setupPagination() {
+                // Disable or enable Previous and Next buttons based on currentPage
+                prevPageBtn.classList.toggle("disabled", currentPage === 1);
+                nextPageBtn.classList.toggle("disabled", currentPage === totalPages);
+
+                // Generate page number buttons (limit to 5)
+                const pageList = document.querySelector(".pagination");
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, currentPage + 2);
+                
+                // Remove existing page number buttons
+                const pageNumbers = pageList.querySelectorAll(".page-number");
+                pageNumbers.forEach(page => page.remove());
+
+                // Create page number buttons
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageItem = document.createElement("li");
+                    pageItem.classList.add("page-item", "page-number");
+                    if (i === currentPage) pageItem.classList.add("active");
+
+                    const pageLink = document.createElement("a");
+                    pageLink.classList.add("page-link");
+                    pageLink.href = "#";
+                    pageLink.innerText = i;
+
+                    pageLink.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        currentPage = i;
+                        displayLogs(currentPage);
+                        setupPagination();
+                    });
+
+                    pageItem.appendChild(pageLink);
+                    pageList.insertBefore(pageItem, nextPageBtn);
+                }
+            }
+
+            // Event listeners for pagination buttons
+            prevPageBtn.addEventListener("click", function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayLogs(currentPage);
+                    setupPagination();
+                }
+            });
+
+            nextPageBtn.addEventListener("click", function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    displayLogs(currentPage);
+                    setupPagination();
+                }
+            });
+
+            // Initial fetch of all logs
+            fetchLogs();
+        });
+    </script>
 </body>
 </html>
