@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+</head>
+<body>
+    <h1>Face Recognition System</h1>
+    <div>
+        <button onclick="startDetection()">Start Detection</button>
+        <button onclick="registerFace()">Register Face</button>
+    </div>
+    <div>
+        <img id="video-stream" src="" alt="Video Stream" style="border: 2px solid black; max-width: 640px; width: 100%;">
+    </div>
+    <script>
+        function startDetection() {
+            document.getElementById('video-stream').src = '/video_feed';
+        }
+        function registerFace() {
+            fetch('/register_face', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => alert('Error: ' + error));
+        }
+    </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from functools import wraps
 import os
 import cv2
 import numpy as np
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Secret key for session management
@@ -58,9 +58,9 @@ def train_recognizer():
 # Initialize recognizer and label map
 label_map = train_recognizer() if os.listdir(REGISTERED_FACES_DIR) else {}
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/detect_intruder')
+def detect_intruder():
+    return render_template('detect_intruder.html')
 
 @app.route('/video_feed')
 def video_feed():
@@ -258,4 +258,6 @@ def camera_stream():
         return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
+    if os.path.exists(TRAINER_FILE):
+        recognizer.read(TRAINER_FILE)
     app.run(debug=True)
