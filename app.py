@@ -1,17 +1,40 @@
 import os
 import cv2
+import sqlite3
+from datetime import datetime
+import time
+import threading
 import numpy as np
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify
 from functools import wraps
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Secret key for session management
+
+# Path to your SQLite database file
+DATABASE = "database.db"
 
 # Dummy data for users and their roles
 users = {
     'staff': {'password': 'staffpass', 'role': 'staff'},
     'kyle': {'password': 'kyle', 'role': 'admin'}
 }
+
+# Ensure screenshots folder exists
+SCREENSHOTS_DIR = 'screenshots'
+if not os.path.exists(SCREENSHOTS_DIR):
+    os.makedirs(SCREENSHOTS_DIR)
+
+# Counter for screenshots
+screenshot_counter = 1
+
+# Lock to ensure thread-safe operations
+lock = threading.Lock()
 
 # Initially empty camera list
 cameras = []
@@ -112,6 +135,57 @@ def register_face():
     
     return jsonify({'status': 'success', 'message': 'Face registered successfully!'})
 
+# Create a queue to handle saving images
+def save_screenshot(frame):
+    global screenshot_counter  # Keep track of the screenshot number
+
+    # Save the screenshot as "screenshot_X.jpg"
+    screenshot_filename = os.path.join(SCREENSHOTS_DIR, f'screenshot_{screenshot_counter}.jpg')
+    cv2.imwrite(screenshot_filename, frame)
+    screenshot_counter += 1  # Increment the screenshot counter
+    print(f"Screenshot saved: {screenshot_filename}")
+
+    # Email content setup
+    sender_email = "carurucankylejustin@gmail.com"
+    receiver_email = "rickandmorty0224@gmail.com"
+    subject = "Intruder Alert: CCTV Detection"
+    body = "Your CCTV system has detected an intruder. Please find the attached screenshot."
+
+    # Create the email message
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = subject
+
+    # Add email body
+    msg.attach(MIMEText(body, "plain"))
+
+    # Add the image attachment
+    attachment_path = screenshot_filename  # Use the newly saved screenshot
+    try:
+        with open(attachment_path, "rb") as attachment_file:
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(attachment_file.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename={attachment_path.split('/')[-1]}"
+            )
+            msg.attach(part)
+    except FileNotFoundError:
+        print(f"Error: File {attachment_path} not found. Skipping attachment.")
+
+    # Sending the email
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()  # Secure the connection
+            server.login(sender_email, "fyxx aaoc rqqr tzkt")  # App Password
+            server.send_message(msg)
+            print("Email sent successfully with the image attachment!")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
 def generate_frames():
     while True:
         ret, frame = video_capture.read()
@@ -138,15 +212,26 @@ def generate_frames():
             if label is not None and confidence < 70:  # Confidence threshold
                 text = f"Authorized: {label_map.get(label, 'Unknown')} (Conf: {int(confidence)})"
                 color = (0, 255, 0)  # Green for authorized
+                print('Authorized')
             else:
                 text = "Intruder"
                 color = (0, 0, 255)  # Red for intruder
-            
+                print('Intruder')
+
+                # If it's an intruder, save the image in a separate thread
+                threading.Thread(target=intruder_save_image, args=(frame,)).start()
+
             cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
             cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
         _, buffer = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n\r\n')
+
+def intruder_save_image(frame):
+    # Use the lock to ensure thread-safe image saving
+    with lock:
+        time.sleep(5)
+        save_screenshot(frame)
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
@@ -179,25 +264,50 @@ def admin_required(f):
 def home():
     return redirect(url_for('login'))
 
-# Login route
+# Login
+def log_action(user, action, details=""):
+    """Log an action in the AuditLogs table."""
+    try:
+        connection = sqlite3.connect(DATABASE)
+        cursor = connection.cursor()
+
+        # Insert log entry
+        cursor.execute("""
+            INSERT INTO AuditLogs (date, user, action, details)
+            VALUES (?, ?, ?, ?)
+        """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), user, action, details))
+
+        connection.commit()
+    except sqlite3.Error as e:
+        print(f"Error logging action: {e}")
+    finally:
+        connection.close()
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
         if username in users and users[username]['password'] == password:
             session['username'] = username
-            flash('Login successful!', 'success')
+
+            # Log successful login
+            log_action(username, "Login", "User logged in successfully.")
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password', 'danger')
-    
+
+            # Log failed login attempt
+            log_action(username if username else "Unknown", "Login Failed", "Invalid credentials provided.")
+
     return render_template('login.html')
 
 # Logout route
 @app.route('/logout')
 def logout():
+    user = session['username']
+    log_action(user, "Logout", "User logged in successfully.")
     session.pop('username', None)
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
@@ -292,6 +402,44 @@ def camera_authorize():
     else:
         flash('You do not have access to view the camera stream.', 'danger')
         return redirect(url_for('dashboard'))
+
+@app.route('/audit_trail')
+@login_required
+def audit_trail():
+    user_role = users[session['username']]['role']
+    
+    # Allow only staff and admins to view camera stream
+    if user_role in ['staff', 'admin']:
+        return render_template('audit_trail.html', cameras=cameras)
+    else:
+        flash('You do not have access to view the camera stream.', 'danger')
+        return redirect(url_for('dashboard'))
+
+def get_audit_logs():
+    """Retrieve all logs from the AuditLogs table."""
+    try:
+        connection = sqlite3.connect(DATABASE)
+        connection.row_factory = sqlite3.Row  # Enables dictionary-like access to rows
+        cursor = connection.cursor()
+
+        # Fetch all records from the table
+        cursor.execute("SELECT * FROM AuditLogs")
+        rows = cursor.fetchall()
+
+        # Convert rows to a list of dictionaries
+        logs = [dict(row) for row in rows]
+        return logs
+    except sqlite3.Error as e:
+        print(f"Error retrieving logs: {e}")
+        return []
+    finally:
+        connection.close()
+
+@app.route('/audit-logs', methods=['GET'])
+def api_audit_logs():
+    """API endpoint to retrieve all logs."""
+    logs = get_audit_logs()
+    return jsonify(logs)
 
 if __name__ == '__main__':
     if os.path.exists(TRAINER_FILE):
