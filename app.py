@@ -257,6 +257,18 @@ def camera_stream():
         flash('You do not have access to view the camera stream.', 'danger')
         return redirect(url_for('dashboard'))
 
+@app.route('/camera_authorize')
+@login_required
+def camera_authorize():
+    user_role = users[session['username']]['role']
+    
+    # Allow only staff and admins to view camera stream
+    if user_role in ['staff', 'admin']:
+        return render_template('camera_authorize.html', cameras=cameras)
+    else:
+        flash('You do not have access to view the camera stream.', 'danger')
+        return redirect(url_for('dashboard'))
+
 if __name__ == '__main__':
     if os.path.exists(TRAINER_FILE):
         recognizer.read(TRAINER_FILE)
