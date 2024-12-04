@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            margin-top: 50px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 32px;
+            color: #2980b9;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stream-thumbnail {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .mt-4 {
+            margin-top: 20px;
+        }
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Camera Stream</h2>
+
+        {% if cameras %}
+            {% for camera in cameras %}
+                <div class="mb-4">
+                    <h3>{{ camera }}</h3>
+                    <video class="stream-thumbnail" id="webcam" autoplay></video>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No cameras available for streaming.</p>
+        {% endif %}
+
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary w-100">Back to Dashboard</a>
+        </div>
+    </div>
+  <script>
+    // Ensure that the browser supports the webcam and TensorFlow.js
+    async function setupWebcam() {
+    const video = document.getElementById('webcam');
+    
+    // Try to get the video stream from the webcam
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: true
+    });
+    video.srcObject = stream;
+    
+    // Wait for the video element to be ready
+    return new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+        resolve(video);
+        };
+    });
+    }
+
+    // Load the COCO-SSD model
+    async function loadModel() {
+    const model = await cocoSsd.load();
+    console.log('COCO-SSD model loaded');
+    return model;
+    }
+
+    // Perform object detection on each video frame
+    async function detectObjects(video, model) {
+    const predictions = await model.detect(video);
+    
+    // Log each detected object
+    predictions.forEach(prediction => {
+        console.log(`Detected object: ${prediction.class} with confidence: ${prediction.score}`);
+    });
+
+    // Call the detectObjects function again for continuous detection
+    requestAnimationFrame(() => detectObjects(video, model));
+    }
+
+    async function run() {
+    // Setup webcam and load the model
+    const video = await setupWebcam();
+    const model = await loadModel();
+    
+    // Start the object detection
+    detectObjects(video, model);
+    }
+
+    // Run the detection
+    run();
+  </script>
+</body>
+</html>

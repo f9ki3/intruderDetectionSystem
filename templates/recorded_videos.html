@@ -1,0 +1,29 @@
+<!-- recorded_videos.html -->
+{% extends 'base.html' %}
+{% block content %}
+    <h2>Recorded Videos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Camera</th>
+                <th>Timestamp</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for video in videos %}
+                <tr>
+                    <td>{{ video.filename }}</td>
+                    <td>{{ video.camera }}</td>
+                    <td>{{ video.timestamp }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_video', video_id=video.id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

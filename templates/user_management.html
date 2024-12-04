@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>User Management</h2>
+
+        <form method="POST" action="">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password">
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-control" id="role" name="role" required>
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                    <!-- Removed the "user" role option -->
+                </select>
+            </div>
+
+            <button type="submit" name="action" value="add" class="btn btn-primary w-100">Add User</button>
+            <button type="submit" name="action" value="delete" class="btn btn-danger w-100 mt-3">Delete User</button>
+        </form>
+
+        <h3 class="mt-4">Registered Users</h3>
+        <ul class="list-group">
+            {% for username, details in users.items() %}
+            <li class="list-group-item">{{ username }} - {{ details.role }}</li>
+            {% else %}
+            <li class="list-group-item">No users registered yet.</li>
+            {% endfor %}
+        </ul>
+
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary w-100">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
