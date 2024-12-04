@@ -46,9 +46,9 @@
 
         {% if cameras %}
             {% for camera in cameras %}
-                <div class="mb-4">
+                <div class="mb-4 d-flex flex-column align-items-center justify-content-center">
                     <h3>{{ camera }}</h3>
-                    <video class="stream-thumbnail" id="webcam" autoplay></video>
+                    <img id="video-stream" src="" alt="Video Stream" style="border: 2px solid black; max-width: 640px; width: 100%;">
                 </div>
             {% endfor %}
         {% else %}
@@ -60,55 +60,7 @@
         </div>
     </div>
   <script>
-    // Ensure that the browser supports the webcam and TensorFlow.js
-    async function setupWebcam() {
-    const video = document.getElementById('webcam');
-    
-    // Try to get the video stream from the webcam
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-    });
-    video.srcObject = stream;
-    
-    // Wait for the video element to be ready
-    return new Promise((resolve) => {
-        video.onloadedmetadata = () => {
-        resolve(video);
-        };
-    });
-    }
-
-    // Load the COCO-SSD model
-    async function loadModel() {
-    const model = await cocoSsd.load();
-    console.log('COCO-SSD model loaded');
-    return model;
-    }
-
-    // Perform object detection on each video frame
-    async function detectObjects(video, model) {
-    const predictions = await model.detect(video);
-    
-    // Log each detected object
-    predictions.forEach(prediction => {
-        console.log(`Detected object: ${prediction.class} with confidence: ${prediction.score}`);
-    });
-
-    // Call the detectObjects function again for continuous detection
-    requestAnimationFrame(() => detectObjects(video, model));
-    }
-
-    async function run() {
-    // Setup webcam and load the model
-    const video = await setupWebcam();
-    const model = await loadModel();
-    
-    // Start the object detection
-    detectObjects(video, model);
-    }
-
-    // Run the detection
-    run();
+    document.getElementById('video-stream').src = '/video_feed';
   </script>
 </body>
 </html>

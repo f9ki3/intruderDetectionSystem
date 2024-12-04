@@ -66,6 +66,22 @@ def detect_intruder():
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/video_feed_only')
+def video_feed_only():
+    return Response(generate_video_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+def generate_video_frames():
+    while True:
+        ret, frame = video_capture.read()
+        if not ret:
+            break
+
+        # Convert the frame to JPEG
+        _, buffer = cv2.imencode('.jpg', frame)
+        # Yield the frame as a byte stream in the multipart format
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n\r\n')
+
+
 @app.route('/register_face', methods=['POST'])
 def register_face():
     if not video_capture.isOpened():
@@ -193,6 +209,14 @@ def dashboard():
     user = session['username']
     role = users[user]['role']
     return render_template('dashboard.html', username=user, role=role)
+
+# Dashboard route
+@app.route('/capture')
+@login_required
+def capture():
+    user = session['username']
+    role = users[user]['role']
+    return render_template('capture.html', username=user, role=role)
 
 # User Management route (Admin-only)
 @app.route('/user_management', methods=['GET', 'POST'])

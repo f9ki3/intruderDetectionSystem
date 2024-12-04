@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture</title>
+</head>
+<body>
+    <script>
+        function registerFace() {
+           setTimeout(() => {
+            fetch('/register_face', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Show the alert
+                    setTimeout(() => {
+                        window.location.href = '/camera_authorize'; // Redirect after the alert
+                    }, 1000); // Delay the redirection for 2 seconds (2000 milliseconds)
+                })
+           }, 3000);
+        }
+        registerFace()
+    </script>
+</body>
+</html>
